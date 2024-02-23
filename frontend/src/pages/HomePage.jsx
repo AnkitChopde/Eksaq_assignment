@@ -49,12 +49,15 @@
 import axios from "axios";
 import React, { useState, useRef, useEffect } from "react";
 import RecordRTC from "recordrtc";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { firebaseApp } from "../firebaseApp";
 
 const HomePage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   let [recordRTC, setRecordRTC] = useState(null);
 
+  const storage = getStorage(firebaseApp)
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -83,14 +86,17 @@ const HomePage = () => {
   const handleSubmit = async()=>{
     try{
 
-        const formData = new FormData();
-        const audioBlob = await recordRTC.getBlob();
-    const fileName = `recording_${Math.floor(Math.random() * 100) + 1}.wav`
-        formData.append('name',fileName);
-        formData.append('audio', audioBlob, fileName);
-        formData.append('created_at', recordRTC.getBlob(),Date.now());
-        const response = await axios.post(`http://localhost:3000/api/audio/add`,formData)
-        console.log(response);
+        const audioRef = ref(
+          storage,`recording-${Date.now()}.wav`
+        );
+        const blob = recordRTC.getBlob();
+        await uploadBytes(audioRef,blob)
+       const url = await getDownloadURL(audioFirebaseRef)
+       
+          const response = await axios.post(`https://recorder-backend-2.onrender.com/api/audio/add`,{url:url})
+        
+        
+        
 
         
     }
