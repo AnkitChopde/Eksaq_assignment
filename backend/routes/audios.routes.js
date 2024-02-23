@@ -1,9 +1,10 @@
 const express = require("express");
-const audioModel = require("../models/audios.js");
+const audioModel = require("../models/audios")
 const audioRouter = express.Router();
 
 audioRouter.post('/add',async(req,res)=>{
     const newAudio =new audioModel(req.body)
+    console.log(req.body)
     try{
         const savedAudio = await newAudio.save()
         res.status(200).send({data:savedAudio})
