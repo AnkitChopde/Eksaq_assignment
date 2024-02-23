@@ -56,8 +56,9 @@ const HomePage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioURL, setAudioURL] = useState(null);
   let [recordRTC, setRecordRTC] = useState(null);
+  const [audioData,setAudioData] = useState([]);
 
-  const storage = getStorage(firebaseApp)
+  const storage = getStorage(firebaseApp);
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -83,32 +84,46 @@ const HomePage = () => {
     }
   };
 
-  const handleSubmit = async()=>{
-    try{
-
-        const audioRef = ref(
-          storage,`recording-${Date.now()}.wav`
-        );
-        const blob = recordRTC.getBlob();
-        await uploadBytes(audioRef,blob)
-       const url = await getDownloadURL(audioFirebaseRef)
-       
-          const response = await axios.post(`https://recorder-backend-2.onrender.com/api/audio/add`,{url:url})
-        
-        
-        
-
-        
-    }
-    catch (error){
-console.log(error)
-    }
+  const fetchData = async() => {
+try{
+  const response =axios.get("https://recorder-backend-2.onrender.com/api/audio")
+  if(response){
+    setAudioData(response.data)
   }
+
+}
+catch (err){
+
+}
+  }
+
+  useEffect(()=>{
+  if(audioData?.length===0){
+    fetchData()
+  }
+  },[audioData])
+
+  const handleSubmit = async () => {
+    try {
+      const audioRef = ref(storage, `recording-${Date.now()}.wav`);
+      const blob = recordRTC.getBlob();
+      await uploadBytes(audioRef, blob);
+      const url = await getDownloadURL(audioFirebaseRef);
+
+      const response = await axios.post(
+        `https://recorder-backend-2.onrender.com/api/audio/add`,
+        { url: url }
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
 
   return (
     <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+      style={{width:"60%",margin:"auto", display: "flex", flexDirection: "row",justifyContent:"space-between", alignItems: "center",gap:"20px" }}
     >
+      <div>
       <h1>Record Audio</h1>
       {isRecording ? (
         <button
@@ -139,23 +154,70 @@ console.log(error)
       )}
       {audioURL && (
         <>
-          <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:"10px"}}>
-          <audio controls src={audioURL} style={{ marginTop: "10px" }} />
-          <button
+          <div
             style={{
-              padding: "10px 15px",
-              background: "#319795",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: "10px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "10px",
             }}
-            onClick={handleSubmit}
           >
-            Submit
-          </button>
+            <audio controls src={audioURL} style={{ marginTop: "10px" }} />
+            <button
+              style={{
+                padding: "10px 15px",
+                background: "#319795",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "10px",
+              }}
+              onClick={handleSubmit}
+            >
+              Submit
+            </button>
           </div>
         </>
       )}
+      </div>
+      <div>
+        <h1>Recorded Audios</h1>
+        {
+          audioData?.length>0 ? (
+            <>
+            {
+              audioData?.map((audio)=>(
+                <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "10px",
+            }}
+          >
+            <audio controls src={audio.url} style={{ marginTop: "10px" }} />
+            <button
+              style={{
+                padding: "10px 15px",
+                background: "#319795",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "10px",
+              }}
+              // onClick={handleSubmit}
+            >
+              Delete
+            </button>
+          </div>
+              ))
+            }
+            </>
+          ):(
+            <>
+            <h6>Audios Data not found</h6>
+            </>
+          )
+        }
+      </div>
     </div>
   );
 };
